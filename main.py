@@ -33,6 +33,8 @@ class Node():
                 if child.score > best_score:
                     best_child = child
                     best_score = child.score
+        if best_child == None:
+            return -1
         return best_child.square
 
     # Add a level of nodes below this node
@@ -134,7 +136,7 @@ class Board():
         assert not self.is_square_open(square), "Cannot undo a move that hasn't been taken"
         self.board[square] = EMPTY
         self.squares_left += 1
-        self.update_winner() # NOTE THAT WE COULD PROBABLY JUST SET THE WINNER TO NONE BECAUSE OF MINIMAX.
+        #self.update_winner()
 
     # See if a square is available
     def is_square_open(self, square):
@@ -181,9 +183,9 @@ class Board():
     def get_score(self):
         winner = self.get_winner()
         if winner == X:
-            return self.squares_left
+            return self.squares_left + 1
         elif winner == O:
-            return -self.squares_left
+            return -self.squares_left - 1
         return 0
 
     # Convert a user-input coordinate (A3, 2b, etc.) to a number, or -1 if failure
@@ -198,9 +200,9 @@ class Board():
         if coord[0].isalpha() and coord[1].isnumeric():
             alpha = coord[0]
             numb = int(coord[1]) - 1
-        elif coord[1].isnumeric() and coord[1].isalpha():
+        elif coord[0].isnumeric() and coord[1].isalpha():
             alpha = coord[1]
-            numb = int(coord[0] - 1)
+            numb = int(coord[0]) - 1
         else:
             return -1
         if not alpha in ['a', 'b', 'c']:
@@ -211,22 +213,49 @@ class Board():
 
 def main():
     board = Board()
+    start = 'a'
+    while start != 'y' and start != 'n':
+        start = input("You go first? (y/n) ")
+        start = start.lower()
+    skip = (start == 'n')
 
     while True:
-        board.print()
-        square = -1
-        while not board.is_square_open(square):
-            move = input("Input move: (a2, 3c, etc.) ")
-            square = board.get_square_from_string(move)
-        board.move(X, square)
+        # Player's turn
+        if skip:
+            skip = False
+        else:
+            board.print()
+            square = -1
+            while not board.is_square_open(square):
+                move = input("Input move: (a2, 3c, etc.) ")
+                square = board.get_square_from_string(move)
+            board.move(X, square)
+            if board.is_full():
+                print("Board is full. Draw game!")
+                break
+            elif board.is_terminal():
+                print("You win!")
+                break
 
+        # CPU's turn
+        start = perf_counter()
         root = Node(player=X)
-        root.minimax(board, depth=4)
+        root.minimax(board, depth=6)
+        #root.traverse()
         best_move = root.get_best_move()
-        if best_move == None:
+        if best_move == -1:
             print("Error: Could not find a move.")
             break
+        print("Took " + str(perf_counter() - start) + " to find the best move")
         board.move(O, best_move)
+        
+        if board.is_full():
+            board.print()
+            print("Board is full. Draw game!")
+            break
+        elif board.is_terminal():
+            print("I win!")
+            break
 
 if __name__ == "__main__":
     main()
