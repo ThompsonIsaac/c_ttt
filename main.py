@@ -1,6 +1,7 @@
 # Tic tac toe program in Python
 # Written as a template for the C program
-# NEED ALPHA-BETA PRUNING.
+
+from time import perf_counter
 
 X = 'X'
 O = 'O'
@@ -37,34 +38,50 @@ class Node():
         return self.score
 
     # Add a level of nodes below this node
-    def add_level(self, board):
+    def add_level(self, board, alpha=-1, beta=1):
         # Update board according to this parent node
         self.update_board(board)
 
         # Set our score to the best possible case - minimax will override later
         if self.player == X:
             self.score = 1
+            next_player = O
         else:
             self.score = -1
+            next_player = X
         
         # Create new children
         if len(self.children) == 0 and board.get_winner() == None:
-            if self.player == O:
-                next_player = X
-            else:
-                next_player = O
             for i in range(9):
                 if board.is_square_open(i):
                     new_node = Node(i, next_player, False)
                     self.children.append(new_node)
                     score = new_node.score_self(board)
+                    
                     self.update_score(score)
+                    if self.player == O:
+                        alpha = max(alpha, score)
+                        if (alpha >= beta):
+                            break
+                    else:
+                        beta = min(beta, score)
+                        if (beta <= alpha):
+                            break
                     
         # Tell children to add level of nodes below them
         else:
             for child in self.children:
-                score = child.add_level(board)
+                score = child.add_level(board, alpha, beta)
+
                 self.update_score(score)
+                if self.player == O:
+                    alpha = max(alpha, score)
+                    if (alpha >= beta):
+                        break
+                else:
+                    beta = min(beta, score)
+                    if (beta <= alpha):
+                        break
 
         # Revert board to before this parent node
         self.revert_board(board)
@@ -151,14 +168,26 @@ class Board():
     def get_winner(self):
         return self.winner
 
+    # Return true if the board is full
+    def is_board_full(self):
+        for i in range(9):
+            if self.board[i] == EMPTY:
+                return False
+        return True
+
 def main():
+    start = perf_counter()
     print("Started.")
     board = Board()
+    board.move(O, 0)
+    board.move(O, 8)
     board.print()
     root = Node()
-    for i in range(9):
+    for i in range(6):
         root.add_level(board)
+    #root.traverse()
     print("Done.")
+    print(perf_counter() - start)
 
 if __name__ == "__main__":
     main()
