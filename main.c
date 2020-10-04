@@ -5,9 +5,14 @@
 #include <stdlib.h> // Memory Management, String Conversions, etc
 
 struct node {
-    unsigned char square; // 0 to 8
-    unsigned char winner; // 0 if no winner, 1 if X wins, 2 if O wins
+    signed char square; // 0 to 8, -1 if no square
+    signed char winner; // 0 if no winner, 1 if X wins, 2 if O wins
     struct node *next[9];
+    
+    // Method add_layer()
+    // for i in range(9):
+    //     next[i] = new node()
+    //     
 }
 
 int main(int argc, char** argv) {
