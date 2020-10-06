@@ -15,27 +15,8 @@ class Node():
         self.is_root = root
         self.square = square # 0 to 8
         self.player = player # Player who went (X or O)
-        self.score = 0 # 1 if X wins, -1 if O wins
-        self.children = []
-
-    # Get best move. Assumes minimax was already called
-    def get_best_move(self):
-        best_child = None
-        if self.player == X:
-            best_score = 100
-            for child in self.children:
-                if child.score < best_score:
-                    best_child = child
-                    best_score = child.score
-        else:
-            best_score = -100
-            for child in self.children:
-                if child.score > best_score:
-                    best_child = child
-                    best_score = child.score
-        if best_child == None:
-            return -1
-        return best_child.square
+        self.score = 0 # Positive favors X, Negative favors O
+        self.best_move = -1 # Best move for the next node
 
     # Add a level of nodes below this node
     def minimax(self, board, depth=0, alpha=-100, beta=100):
@@ -62,14 +43,13 @@ class Node():
                     
                     # Create new node and branches
                     new_node = Node(i, next_player, False)
-                    self.children.append(new_node)
+                    #self.children.append(new_node)
                     score = new_node.minimax(board, depth - 1, alpha, beta)
 
                     # Update this node's score according to child score
-                    if self.player == X and score < self.score:
+                    if (self.player == X and score < self.score) or (self.player == O and score > self.score):
                         self.score = score
-                    elif self.player == O and score > self.score:
-                        self.score = score
+                        self.best_move = new_node.square
 
                     # Apply alpha-beta pruning
                     if self.player == O:
@@ -164,10 +144,6 @@ class Board():
         if start != EMPTY and start == self.board[4] and start == self.board[6]:
             self.winner = start
 
-    # Get the current winner
-    def get_winner(self):
-        return self.winner
-
     # Return true if the board is full
     def is_full(self):
         for i in range(9):
@@ -177,14 +153,13 @@ class Board():
 
     # Return true if the board is terminal
     def is_terminal(self):
-        return self.is_full() or self.get_winner() != None
+        return self.is_full() or self.winner != None
 
     # Get the score of this board pos. -1 if O wins, 1 if X wins.
     def get_score(self):
-        winner = self.get_winner()
-        if winner == X:
+        if self.winner == X:
             return self.squares_left + 1
-        elif winner == O:
+        elif self.winner == O:
             return -self.squares_left - 1
         return 0
 
@@ -212,50 +187,59 @@ class Board():
         return {'a': 0, 'b': 1, 'c': 2}[alpha] + (int(numb) * 3)
 
 def main():
-    board = Board()
-    start = 'a'
-    while start != 'y' and start != 'n':
-        start = input("You go first? (y/n) ")
-        start = start.lower()
-    skip = (start == 'n')
 
-    while True:
-        # Player's turn
-        if skip:
-            skip = False
-        else:
-            board.print()
-            square = -1
-            while not board.is_square_open(square):
-                move = input("Input move: (a2, 3c, etc.) ")
-                square = board.get_square_from_string(move)
-            board.move(X, square)
+    play_again = True
+    while play_again:
+        board = Board()
+        start = None
+        while start != 'y' and start != 'n':
+            start = input("You go first? (y/n) ")
+            start = start.lower()
+        skip = (start == 'n')
+
+        while True:
+            # Player's turn
+            if skip:
+                skip = False
+            else:
+                board.print()
+                square = -1
+                while not board.is_square_open(square):
+                    move = input("Input move: (a2, 3c, etc.) ")
+                    square = board.get_square_from_string(move)
+                board.move(X, square)
+                board.print()
+                if board.is_full():
+                    print("Board is full. Draw game!")
+                    break
+                elif board.is_terminal():
+                    print("You win!")
+                    break
+
+            # CPU's turn
+            start = perf_counter()
+            root = Node(player=X)
+            root.minimax(board, depth=6)
+            best_move = root.best_move
+            if best_move == -1:
+                print("Error: Could not find a move.")
+                break
+            print("Took " + str(perf_counter() - start) + " to find the best move")
+            board.move(O, best_move)
             if board.is_full():
+                board.print()
                 print("Board is full. Draw game!")
                 break
             elif board.is_terminal():
-                print("You win!")
+                board.print()
+                print("I win!")
                 break
 
-        # CPU's turn
-        start = perf_counter()
-        root = Node(player=X)
-        root.minimax(board, depth=6)
-        #root.traverse()
-        best_move = root.get_best_move()
-        if best_move == -1:
-            print("Error: Could not find a move.")
-            break
-        print("Took " + str(perf_counter() - start) + " to find the best move")
-        board.move(O, best_move)
-        
-        if board.is_full():
-            board.print()
-            print("Board is full. Draw game!")
-            break
-        elif board.is_terminal():
-            print("I win!")
-            break
+        play_again = None
+        while play_again != 'y' and play_again != 'n':
+            play_again = input("Play again? (y/n) ")
+            play_again = play_again.lower()
+        play_again = (play_again == 'y')
 
 if __name__ == "__main__":
     main()
