@@ -1,2 +1,2 @@
 # ttt
-Just some experimentation with minimax
+Just some experimentation with minimax (tic tac toe)
