@@ -1,5 +1,5 @@
-# Tic tac toe program in Python
-# Written as a template for the C program
+# Tic tac toe program in Python by Isaac Thompson
+# Focuses on Object Oriented Programming
 
 from time import perf_counter
 
@@ -84,6 +84,7 @@ class Node():
             print("  " * level + "Player " + self.player + ", Square " + str(self.square) + ", Score " + str(self.score))
         for child in self.children:
             child.traverse(level + 1)
+
 
 # Store data about the 3x3 grid
 class Board():
@@ -186,60 +187,101 @@ class Board():
             return -1
         return {'a': 0, 'b': 1, 'c': 2}[alpha] + (int(numb) * 3)
 
-def main():
 
-    play_again = True
-    while play_again:
-        board = Board()
-        start = None
-        while start != 'y' and start != 'n':
-            start = input("You go first? (y/n) ")
-            start = start.lower()
-        skip = (start == 'n')
+# Game controller class
+class Game():
 
-        while True:
-            # Player's turn
-            if skip:
-                skip = False
-            else:
-                board.print()
-                square = -1
-                while not board.is_square_open(square):
-                    move = input("Input move: (a2, 3c, etc.) ")
-                    square = board.get_square_from_string(move)
-                board.move(X, square)
-                board.print()
-                if board.is_full():
-                    print("Board is full. Draw game!")
-                    break
-                elif board.is_terminal():
-                    print("You win!")
-                    break
+    def __init__(self):
+        self.reset()
 
-            # CPU's turn
-            start = perf_counter()
+    # Reset the game state.
+    def reset(self):
+        self.player = X
+        self.board = Board()
+
+    # Flip turn from X to O or O to X.
+    def flip_turn(self):
+        if (self.player == X):
+            self.player = O
+        else:
+            self.player = X
+
+    # Make CPU take a turn.
+    def cpu_move(self):
+        # Set the root node to the player opposite of the CPU.
+        if self.player == X:
+            root = Node(player=O)
+        else:
             root = Node(player=X)
-            root.minimax(board, depth=6)
-            best_move = root.best_move
-            if best_move == -1:
-                print("Error: Could not find a move.")
-                break
-            print("Took " + str(perf_counter() - start) + " to find the best move")
-            board.move(O, best_move)
-            if board.is_full():
-                board.print()
-                print("Board is full. Draw game!")
-                break
-            elif board.is_terminal():
-                board.print()
-                print("I win!")
-                break
 
-        play_again = None
-        while play_again != 'y' and play_again != 'n':
-            play_again = input("Play again? (y/n) ")
-            play_again = play_again.lower()
-        play_again = (play_again == 'y')
+        # Determine the best move.
+        root.minimax(self.board, depth=6)
+        best_move = root.best_move
+
+        # Apply the move to the board and flip player.
+        self.board.move(self.player, best_move)
+        self.flip_turn()
+
+    # Get player to input move.
+    def player_move(self):
+        square = -1
+        while not self.board.is_square_open(square):
+            move = input("Input move: (a2, 3c, etc.) ")
+            square = self.board.get_square_from_string(move)
+
+        # Apply the move to the board and flip player.
+        self.board.move(self.player, square)
+        self.flip_turn()
+
+    # Main game loop
+    def play(self):
+
+        play_again = True
+        while play_again:
+            self.reset()
+
+            # Determine who goes first.
+            start = None
+            while start != 'y' and start != 'n':
+                start = input("You go first? (y/n) ")
+                start = start.lower()
+
+            # Loop until the game is done.
+            continue_game = True
+            while continue_game:
+                self.board.print()
+
+                # Player turn
+                if start == 'n':
+                    start = 'y'
+                else:
+                    self.player_move()
+                    self.board.print()
+                    if self.board.is_full():
+                        print("Board is full. Draw game!")
+                        continue_game = False
+                    elif self.board.is_terminal():
+                        print("You win!")
+                        continue_game = False
+
+                # CPU Turn
+                if continue_game:
+                    self.cpu_move()
+                    if self.board.is_full():
+                        self.board.print()
+                        print("Board is full. Draw game!")
+                        continue_game = False
+                    elif self.board.is_terminal():
+                        self.board.print()
+                        print("I win!")
+                        continue_game = False
+
+            play_again = None
+            while play_again != 'y' and play_again != 'n':
+                play_again = input("Play again? (y/n) ")
+                play_again = play_again.lower()
+            play_again = (play_again == 'y')
+
 
 if __name__ == "__main__":
-    main()
+    Game().play()
